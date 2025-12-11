@@ -13,10 +13,18 @@ interface Props {
   isEdit?: boolean;
 }
 
-export const BloodPressureForm = ({ userEmail, initialData, onSubmit, onCancel, isEdit }: Props) => {
+const getCurrentDateTime = () => {
   const now = new Date();
-  const [date, setDate] = useState(initialData?.date || `${now.getMonth() + 1}/${now.getDate()}`);
-  const [time, setTime] = useState(initialData?.time || `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`);
+  return {
+    date: `${now.getMonth() + 1}/${now.getDate()}`,
+    time: `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
+  };
+};
+
+export const BloodPressureForm = ({ userEmail, initialData, onSubmit, onCancel, isEdit }: Props) => {
+  const { date: defaultDate, time: defaultTime } = getCurrentDateTime();
+  const [date, setDate] = useState(initialData?.date || defaultDate);
+  const [time, setTime] = useState(initialData?.time || defaultTime);
   const [systolic, setSystolic] = useState(initialData?.systolic?.toString() || '');
   const [diastolic, setDiastolic] = useState(initialData?.diastolic?.toString() || '');
   const [pulse, setPulse] = useState(initialData?.pulse?.toString() || '');
@@ -35,6 +43,10 @@ export const BloodPressureForm = ({ userEmail, initialData, onSubmit, onCancel, 
         pulse: parseInt(pulse),
       });
       if (!isEdit) {
+        // Reset to current time after adding
+        const { date: newDate, time: newTime } = getCurrentDateTime();
+        setDate(newDate);
+        setTime(newTime);
         setSystolic('');
         setDiastolic('');
         setPulse('');
