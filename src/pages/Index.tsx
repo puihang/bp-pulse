@@ -4,17 +4,15 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BloodPressureForm } from '@/components/BloodPressureForm';
 import { RecordsTable } from '@/components/RecordsTable';
-import { SetupGuide } from '@/components/SetupGuide';
 import {
-  fetchRecordsByEmail,
+  fetchRecords,
   addRecord,
   updateRecord,
   deleteRecord,
-  getAppsScriptUrl,
   type BloodPressureRecord,
-} from '@/lib/googleSheets';
+} from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
-import { RefreshCw, Settings, Heart } from 'lucide-react';
+import { RefreshCw, Heart, LogOut } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,32 +31,30 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [editingRecord, setEditingRecord] = useState<BloodPressureRecord | null>(null);
   const [deletingRecord, setDeletingRecord] = useState<BloodPressureRecord | null>(null);
-  const [showSetup, setShowSetup] = useState(() => !getAppsScriptUrl());
   const { toast } = useToast();
 
   const loadRecords = async () => {
     if (!email) return;
     setIsLoading(true);
     try {
-      const data = await fetchRecordsByEmail(email);
+      const data = await fetchRecords(email);
       setRecords(data.sort((a, b) => {
-        // Sort by date and time descending
         const dateA = a.date + ' ' + a.time;
         const dateB = b.date + ' ' + b.time;
         return dateB.localeCompare(dateA);
       }));
     } catch (error) {
-      toast({ title: '載入失敗', variant: 'destructive' });
+      toast({ title: '載入失敗', description: String(error), variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (isLoggedIn && !showSetup) {
+    if (isLoggedIn) {
       loadRecords();
     }
-  }, [isLoggedIn, showSetup]);
+  }, [isLoggedIn]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,8 +77,7 @@ const Index = () => {
     try {
       await addRecord(data);
       toast({ title: '新增成功' });
-      // Wait a bit for Google Sheet to update
-      setTimeout(loadRecords, 1500);
+      setTimeout(loadRecords, 1000);
     } catch (error) {
       toast({ title: '新增失敗', description: String(error), variant: 'destructive' });
     }
@@ -94,9 +89,9 @@ const Index = () => {
       await updateRecord(editingRecord.rowIndex, data);
       toast({ title: '更新成功' });
       setEditingRecord(null);
-      setTimeout(loadRecords, 1500);
+      setTimeout(loadRecords, 1000);
     } catch (error) {
-      toast({ title: '更新失敗', variant: 'destructive' });
+      toast({ title: '更新失敗', description: String(error), variant: 'destructive' });
     }
   };
 
@@ -106,29 +101,22 @@ const Index = () => {
       await deleteRecord(deletingRecord.rowIndex);
       toast({ title: '刪除成功' });
       setDeletingRecord(null);
-      setTimeout(loadRecords, 1500);
+      setTimeout(loadRecords, 1000);
     } catch (error) {
-      toast({ title: '刪除失敗', variant: 'destructive' });
+      toast({ title: '刪除失敗', description: String(error), variant: 'destructive' });
     }
   };
 
-  if (showSetup) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 p-4 py-8">
-        <SetupGuide onComplete={() => setShowSetup(false)} />
-      </div>
-    );
-  }
-
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-gradient-to-b from-rose-50 to-white flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-lg">
           <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Heart className="h-6 w-6 text-primary" />
+            <div className="mx-auto w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mb-4">
+              <Heart className="h-8 w-8 text-rose-500" />
             </div>
-            <CardTitle>血壓記錄</CardTitle>
+            <CardTitle className="text-2xl">血壓記錄</CardTitle>
+            <p className="text-muted-foreground">請輸入電郵地址登入</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
@@ -136,11 +124,12 @@ const Index = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="請輸入電郵地址"
+                placeholder="your@email.com"
                 required
+                className="text-center"
               />
-              <Button type="submit" className="w-full">
-                進入
+              <Button type="submit" className="w-full bg-rose-500 hover:bg-rose-600">
+                登入
               </Button>
             </form>
           </CardContent>
@@ -150,19 +139,17 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-      <header className="border-b bg-background/95 backdrop-blur sticky top-0 z-10">
+    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-white">
+      <header className="border-b bg-white/80 backdrop-blur sticky top-0 z-10">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Heart className="h-5 w-5 text-primary" />
-            <span className="font-semibold">血壓記錄</span>
+            <Heart className="h-5 w-5 text-rose-500" />
+            <span className="font-semibold text-rose-900">血壓記錄</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground hidden sm:inline">{email}</span>
-            <Button variant="ghost" size="icon" onClick={() => setShowSetup(true)}>
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
+            <Button variant="outline" size="sm" onClick={handleLogout} className="gap-1">
+              <LogOut className="h-4 w-4" />
               登出
             </Button>
           </div>
@@ -195,7 +182,6 @@ const Index = () => {
               records={records}
               onEdit={setEditingRecord}
               onDelete={setDeletingRecord}
-              canEdit={!!getAppsScriptUrl()}
             />
           </CardContent>
         </Card>
@@ -211,7 +197,9 @@ const Index = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>刪除</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} className="bg-rose-500 hover:bg-rose-600">
+              刪除
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
