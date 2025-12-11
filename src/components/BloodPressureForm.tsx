@@ -13,12 +13,10 @@ interface Props {
   isEdit?: boolean;
 }
 
-const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 const getCurrentDateTime = () => {
   const now = new Date();
   return {
-    date: `${monthNames[now.getMonth()]} ${now.getDate()}`,
+    date: `${now.getMonth() + 1}/${now.getDate()}`,
     time: `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
   };
 };
@@ -72,7 +70,7 @@ export const BloodPressureForm = ({ userPhone, initialData, onSubmit, onCancel, 
                 id="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                placeholder="Dec 11"
+                placeholder="12/11"
                 required
               />
             </div>
