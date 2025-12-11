@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      blood_pressure_records: {
+        Row: {
+          created_at: string | null
+          diastolic: number
+          email: string
+          id: string
+          pulse: number
+          record_date: string
+          record_time: string
+          systolic: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          diastolic: number
+          email: string
+          id?: string
+          pulse: number
+          record_date: string
+          record_time: string
+          systolic: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          diastolic?: number
+          email?: string
+          id?: string
+          pulse?: number
+          record_date?: string
+          record_time?: string
+          systolic?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
