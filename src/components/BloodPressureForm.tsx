@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BloodPressureRecord } from '@/lib/api';
 
 interface Props {
-  userEmail: string;
+  userPhone: string;
   initialData?: BloodPressureRecord;
   onSubmit: (data: Omit<BloodPressureRecord, 'rowIndex'>) => Promise<void>;
   onCancel?: () => void;
@@ -21,7 +21,7 @@ const getCurrentDateTime = () => {
   };
 };
 
-export const BloodPressureForm = ({ userEmail, initialData, onSubmit, onCancel, isEdit }: Props) => {
+export const BloodPressureForm = ({ userPhone, initialData, onSubmit, onCancel, isEdit }: Props) => {
   const { date: defaultDate, time: defaultTime } = getCurrentDateTime();
   const [date, setDate] = useState(initialData?.date || defaultDate);
   const [time, setTime] = useState(initialData?.time || defaultTime);
@@ -35,7 +35,7 @@ export const BloodPressureForm = ({ userEmail, initialData, onSubmit, onCancel, 
     setIsLoading(true);
     try {
       await onSubmit({
-        email: userEmail,
+        phone: userPhone,
         date,
         time,
         systolic: parseInt(systolic),

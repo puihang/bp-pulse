@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
 export interface BloodPressureRecord {
-  email: string;
+  phone: string;
   date: string;
   time: string;
   systolic: number;
@@ -10,9 +10,9 @@ export interface BloodPressureRecord {
   rowIndex?: number;
 }
 
-export const fetchRecords = async (email: string): Promise<BloodPressureRecord[]> => {
+export const fetchRecords = async (phone: string): Promise<BloodPressureRecord[]> => {
   const { data, error } = await supabase.functions.invoke('google-sheets', {
-    body: { action: 'fetch', email },
+    body: { action: 'fetch', phone },
   });
 
   if (error) {
