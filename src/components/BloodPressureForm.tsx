@@ -86,32 +86,34 @@ export const BloodPressureForm = ({ userPhone, initialData, onSubmit, onCancel, 
             </div>
           </div>
           
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="systolic">上壓</Label>
-              <Input
-                id="systolic"
-                type="number"
-                value={systolic}
-                onChange={(e) => setSystolic(e.target.value)}
-                placeholder="120"
-                required
-                min={60}
-                max={250}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="diastolic">下壓</Label>
-              <Input
-                id="diastolic"
-                type="number"
-                value={diastolic}
-                onChange={(e) => setDiastolic(e.target.value)}
-                placeholder="80"
-                required
-                min={40}
-                max={150}
-              />
+              <Label>上/下壓</Label>
+              <div className="flex items-center gap-1">
+                <Input
+                  id="systolic"
+                  type="number"
+                  value={systolic}
+                  onChange={(e) => setSystolic(e.target.value)}
+                  placeholder="120"
+                  required
+                  min={60}
+                  max={250}
+                  className="text-center"
+                />
+                <span className="text-lg font-medium text-muted-foreground">/</span>
+                <Input
+                  id="diastolic"
+                  type="number"
+                  value={diastolic}
+                  onChange={(e) => setDiastolic(e.target.value)}
+                  placeholder="80"
+                  required
+                  min={40}
+                  max={150}
+                  className="text-center"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="pulse">脈搏</Label>
