@@ -1,13 +1,12 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from 'lucide-react';
-import type { BloodPressureRecord } from '@/lib/googleSheets';
+import type { BloodPressureRecord } from '@/lib/api';
 
 interface Props {
   records: BloodPressureRecord[];
   onEdit: (record: BloodPressureRecord) => void;
   onDelete: (record: BloodPressureRecord) => void;
-  canEdit: boolean;
 }
 
 const getBloodPressureStatus = (systolic: number, diastolic: number) => {
@@ -22,7 +21,7 @@ const getBloodPressureStatus = (systolic: number, diastolic: number) => {
   }
 };
 
-export const RecordsTable = ({ records, onEdit, onDelete, canEdit }: Props) => {
+export const RecordsTable = ({ records, onEdit, onDelete }: Props) => {
   if (records.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -42,7 +41,7 @@ export const RecordsTable = ({ records, onEdit, onDelete, canEdit }: Props) => {
             <TableHead className="text-center">下壓</TableHead>
             <TableHead className="text-center">脈搏</TableHead>
             <TableHead className="text-center">狀態</TableHead>
-            {canEdit && <TableHead className="text-right">操作</TableHead>}
+            <TableHead className="text-right">操作</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -60,26 +59,24 @@ export const RecordsTable = ({ records, onEdit, onDelete, canEdit }: Props) => {
                     {status.label}
                   </span>
                 </TableCell>
-                {canEdit && (
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onEdit(record)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onDelete(record)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                )}
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onEdit(record)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onDelete(record)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
               </TableRow>
             );
           })}
