@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SHEET_ID = '1p35EWxhVcYYJurZWEO3yplFn3Lnbn9ERL6DP0UT0DHA';
+const SHEET_ID = '1rGf89L-MfZdNR1qT8s5DJxiStSfWh97K2D9xjp5OxKg';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
