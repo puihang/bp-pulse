@@ -25,8 +25,8 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const Index = () => {
-  const [email, setEmail] = useState(() => localStorage.getItem('userEmail') || '');
-  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('userEmail'));
+  const [phone, setPhone] = useState(() => localStorage.getItem('userPhone') || '');
+  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('userPhone'));
   const [records, setRecords] = useState<BloodPressureRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [editingRecord, setEditingRecord] = useState<BloodPressureRecord | null>(null);
@@ -34,10 +34,10 @@ const Index = () => {
   const { toast } = useToast();
 
   const loadRecords = async () => {
-    if (!email) return;
+    if (!phone) return;
     setIsLoading(true);
     try {
-      const data = await fetchRecords(email);
+      const data = await fetchRecords(phone);
       setRecords(data.sort((a, b) => {
         const dateA = a.date + ' ' + a.time;
         const dateB = b.date + ' ' + b.time;
@@ -58,17 +58,18 @@ const Index = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.includes('@')) {
-      localStorage.setItem('userEmail', email);
+    const phoneRegex = /^[0-9]{8,}$/;
+    if (phoneRegex.test(phone.replace(/\D/g, ''))) {
+      localStorage.setItem('userPhone', phone);
       setIsLoggedIn(true);
     } else {
-      toast({ title: '請輸入有效的電郵地址', variant: 'destructive' });
+      toast({ title: '請輸入有效的電話號碼（至少8位數字）', variant: 'destructive' });
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('userEmail');
-    setEmail('');
+    localStorage.removeItem('userPhone');
+    setPhone('');
     setIsLoggedIn(false);
     setRecords([]);
   };
@@ -116,15 +117,15 @@ const Index = () => {
               <Heart className="h-8 w-8 text-rose-500" />
             </div>
             <CardTitle className="text-2xl">血壓記錄</CardTitle>
-            <p className="text-muted-foreground">請輸入電郵地址登入</p>
+            <p className="text-muted-foreground">請輸入電話號碼登入</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="12345678"
                 required
                 className="text-center"
               />
@@ -147,7 +148,7 @@ const Index = () => {
             <span className="font-semibold text-rose-900">血壓記錄</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground hidden sm:inline">{email}</span>
+            <span className="text-sm text-muted-foreground hidden sm:inline">{phone}</span>
             <Button variant="outline" size="sm" onClick={handleLogout} className="gap-1">
               <LogOut className="h-4 w-4" />
               登出
@@ -159,14 +160,14 @@ const Index = () => {
       <main className="container mx-auto px-4 py-6 space-y-6 max-w-3xl">
         {editingRecord ? (
           <BloodPressureForm
-            userEmail={email}
+            userPhone={phone}
             initialData={editingRecord}
             onSubmit={handleUpdate}
             onCancel={() => setEditingRecord(null)}
             isEdit
           />
         ) : (
-          <BloodPressureForm userEmail={email} onSubmit={handleAdd} />
+          <BloodPressureForm userPhone={phone} onSubmit={handleAdd} />
         )}
 
         <Card>

@@ -14,11 +14,11 @@ serve(async (req) => {
   }
 
   try {
-    const { action, email, data, rowIndex } = await req.json();
-    console.log('Action:', action, 'Email:', email, 'RowIndex:', rowIndex);
+    const { action, phone, data, rowIndex } = await req.json();
+    console.log('Action:', action, 'Phone:', phone, 'RowIndex:', rowIndex);
 
     if (action === 'fetch') {
-      // Fetch all records for a specific email using CSV export (no auth needed for public sheet)
+      // Fetch all records for a specific phone using CSV export (no auth needed for public sheet)
       const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
       const response = await fetch(csvUrl);
       const csvText = await response.text();
@@ -29,10 +29,10 @@ serve(async (req) => {
       for (let i = 1; i < lines.length; i++) {
         const values = parseCSVLine(lines[i]);
         if (values.length >= 6) {
-          const recordEmail = values[0].trim().toLowerCase();
-          if (!email || recordEmail === email.toLowerCase()) {
+          const recordPhone = values[0].trim();
+          if (!phone || recordPhone === phone) {
             records.push({
-              email: values[0],
+              phone: values[0],
               date: values[1],
               time: values[2],
               systolic: parseInt(values[3]) || 0,
@@ -65,7 +65,7 @@ serve(async (req) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'add',
-          data: [data.email, data.date, data.time, data.systolic, data.diastolic, data.pulse]
+          data: [data.phone, data.date, data.time, data.systolic, data.diastolic, data.pulse]
         }),
       });
       
@@ -91,7 +91,7 @@ serve(async (req) => {
         body: JSON.stringify({
           action: 'update',
           rowIndex: rowIndex,
-          data: [data.email, data.date, data.time, data.systolic, data.diastolic, data.pulse]
+          data: [data.phone, data.date, data.time, data.systolic, data.diastolic, data.pulse]
         }),
       });
       
