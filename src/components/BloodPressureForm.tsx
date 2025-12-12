@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DateTimePicker } from '@/components/DateTimePicker';
+import { WheelPicker } from '@/components/WheelPicker';
 import type { BloodPressureRecord } from '@/lib/api';
 
 interface Props {
@@ -17,18 +17,23 @@ interface Props {
 const getCurrentDateTime = () => {
   const now = new Date();
   return {
-    date: `${now.getMonth() + 1}/${now.getDate()}`,
+    date: `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}`,
     time: `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
   };
 };
+
+// Generate number options for wheel pickers
+const systolicOptions = Array.from({ length: 141 }, (_, i) => String(60 + i)); // 60-200
+const diastolicOptions = Array.from({ length: 101 }, (_, i) => String(40 + i)); // 40-140
+const pulseOptions = Array.from({ length: 161 }, (_, i) => String(40 + i)); // 40-200
 
 export const BloodPressureForm = ({ userPhone, initialData, onSubmit, onCancel, isEdit }: Props) => {
   const { date: defaultDate, time: defaultTime } = getCurrentDateTime();
   const [date, setDate] = useState(initialData?.date || defaultDate);
   const [time, setTime] = useState(initialData?.time || defaultTime);
-  const [systolic, setSystolic] = useState(initialData?.systolic?.toString() || '');
-  const [diastolic, setDiastolic] = useState(initialData?.diastolic?.toString() || '');
-  const [pulse, setPulse] = useState(initialData?.pulse?.toString() || '');
+  const [systolic, setSystolic] = useState(initialData?.systolic?.toString() || '105');
+  const [diastolic, setDiastolic] = useState(initialData?.diastolic?.toString() || '70');
+  const [pulse, setPulse] = useState(initialData?.pulse?.toString() || '75');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,9 +53,9 @@ export const BloodPressureForm = ({ userPhone, initialData, onSubmit, onCancel, 
         const { date: newDate, time: newTime } = getCurrentDateTime();
         setDate(newDate);
         setTime(newTime);
-        setSystolic('');
-        setDiastolic('');
-        setPulse('');
+        setSystolic('105');
+        setDiastolic('70');
+        setPulse('75');
       }
     } finally {
       setIsLoading(false);
@@ -74,44 +79,32 @@ export const BloodPressureForm = ({ userPhone, initialData, onSubmit, onCancel, 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>上/下壓</Label>
-              <div className="flex items-center gap-1">
-                <Input
-                  id="systolic"
-                  type="number"
+              <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-2">
+                <WheelPicker
+                  options={systolicOptions}
                   value={systolic}
-                  onChange={(e) => setSystolic(e.target.value)}
-                  placeholder="120"
-                  required
-                  min={60}
-                  max={250}
-                  className="text-center"
+                  onChange={setSystolic}
+                  className="flex-1"
                 />
                 <span className="text-lg font-medium text-muted-foreground">/</span>
-                <Input
-                  id="diastolic"
-                  type="number"
+                <WheelPicker
+                  options={diastolicOptions}
                   value={diastolic}
-                  onChange={(e) => setDiastolic(e.target.value)}
-                  placeholder="80"
-                  required
-                  min={40}
-                  max={150}
-                  className="text-center"
+                  onChange={setDiastolic}
+                  className="flex-1"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="pulse">脈搏</Label>
-              <Input
-                id="pulse"
-                type="number"
-                value={pulse}
-                onChange={(e) => setPulse(e.target.value)}
-                placeholder="70"
-                required
-                min={40}
-                max={200}
-              />
+              <Label>脈搏</Label>
+              <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-2">
+                <WheelPicker
+                  options={pulseOptions}
+                  value={pulse}
+                  onChange={setPulse}
+                  className="flex-1"
+                />
+              </div>
             </div>
           </div>
           

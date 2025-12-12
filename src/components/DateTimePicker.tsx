@@ -10,10 +10,15 @@ interface DateTimePickerProps {
 }
 
 export const DateTimePicker = ({ date, time, onDateChange, onTimeChange }: DateTimePickerProps) => {
-  // Parse current date value (format: "M/D")
-  const [currentMonth, currentDay] = useMemo(() => {
+  // Parse current date value (format: "YYYY/M/D")
+  const [currentYear, currentMonth, currentDay] = useMemo(() => {
     const parts = date.split('/');
-    return [parts[0] || '1', parts[1] || '1'];
+    if (parts.length === 3) {
+      return [parts[0], parts[1] || '1', parts[2] || '1'];
+    }
+    // Fallback for old format "M/D"
+    const now = new Date();
+    return [String(now.getFullYear()), parts[0] || '1', parts[1] || '1'];
   }, [date]);
 
   // Parse current time value (format: "H:MM")
@@ -23,6 +28,11 @@ export const DateTimePicker = ({ date, time, onDateChange, onTimeChange }: DateT
   }, [time]);
 
   // Generate options
+  const years = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return Array.from({ length: 10 }, (_, i) => String(currentYear - 5 + i));
+  }, []);
+
   const months = useMemo(() => 
     Array.from({ length: 12 }, (_, i) => String(i + 1)), []
   );
@@ -39,12 +49,16 @@ export const DateTimePicker = ({ date, time, onDateChange, onTimeChange }: DateT
     Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')), []
   );
 
+  const handleYearChange = (year: string) => {
+    onDateChange(`${year}/${currentMonth}/${currentDay}`);
+  };
+
   const handleMonthChange = (month: string) => {
-    onDateChange(`${month}/${currentDay}`);
+    onDateChange(`${currentYear}/${month}/${currentDay}`);
   };
 
   const handleDayChange = (day: string) => {
-    onDateChange(`${currentMonth}/${day}`);
+    onDateChange(`${currentYear}/${currentMonth}/${day}`);
   };
 
   const handleHourChange = (hour: string) => {
@@ -61,6 +75,13 @@ export const DateTimePicker = ({ date, time, onDateChange, onTimeChange }: DateT
       <div className="space-y-2">
         <Label>日期</Label>
         <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-2">
+          <WheelPicker
+            options={years}
+            value={currentYear}
+            onChange={handleYearChange}
+            className="flex-1"
+          />
+          <span className="text-lg font-medium text-muted-foreground">/</span>
           <WheelPicker
             options={months}
             value={currentMonth}
