@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DateTimePicker } from '@/components/DateTimePicker';
 import type { BloodPressureRecord } from '@/lib/api';
 
 interface Props {
@@ -63,28 +64,12 @@ export const BloodPressureForm = ({ userPhone, initialData, onSubmit, onCancel, 
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="date">日期</Label>
-              <Input
-                id="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                placeholder="12/11"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="time">時間</Label>
-              <Input
-                id="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                placeholder="20:00"
-                required
-              />
-            </div>
-          </div>
+          <DateTimePicker
+            date={date}
+            time={time}
+            onDateChange={setDate}
+            onTimeChange={setTime}
+          />
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
