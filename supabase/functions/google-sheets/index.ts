@@ -28,16 +28,20 @@ serve(async (req) => {
       
       for (let i = 1; i < lines.length; i++) {
         const values = parseCSVLine(lines[i]);
-        if (values.length >= 6) {
+        if (values.length >= 5) {
           const recordPhone = values[0].trim();
           if (!phone || recordPhone === phone) {
+            // Column D contains combined blood pressure as "systolic/diastolic"
+            const bpParts = values[3].split('/');
+            const systolic = parseInt(bpParts[0]) || 0;
+            const diastolic = parseInt(bpParts[1]) || 0;
             records.push({
               phone: values[0],
               date: values[1],
               time: values[2],
-              systolic: parseInt(values[3]) || 0,
-              diastolic: parseInt(values[4]) || 0,
-              pulse: parseInt(values[5]) || 0,
+              systolic,
+              diastolic,
+              pulse: parseInt(values[4]) || 0,
               rowIndex: i + 1,
             });
           }
@@ -65,7 +69,7 @@ serve(async (req) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'add',
-          data: [data.phone, data.date, data.time, data.systolic, data.diastolic, data.pulse]
+          data: [data.phone, data.date, data.time, `${data.systolic}/${data.diastolic}`, data.pulse]
         }),
       });
       
@@ -91,7 +95,7 @@ serve(async (req) => {
         body: JSON.stringify({
           action: 'update',
           rowIndex: rowIndex,
-          data: [data.phone, data.date, data.time, data.systolic, data.diastolic, data.pulse]
+          data: [data.phone, data.date, data.time, `${data.systolic}/${data.diastolic}`, data.pulse]
         }),
       });
       
