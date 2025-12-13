@@ -64,9 +64,11 @@ export const BloodPressureForm = ({ userPhone, initialData, onSubmit, onCancel, 
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">{isEdit ? '編輯記錄' : '新增血壓記錄'}</CardTitle>
-      </CardHeader>
+      {isEdit && (
+        <CardHeader>
+          <CardTitle className="text-lg">編輯記錄</CardTitle>
+        </CardHeader>
+      )}
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <DateTimePicker
