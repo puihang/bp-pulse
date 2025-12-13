@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,16 +30,17 @@ const AppContext = createContext<AppContextType | null>(null);
 
 export const useApp = () => {
   const context = useContext(AppContext);
-  if (!context) throw new Error('useApp must be used within AppLayout');
+  if (!context) throw new Error('useApp must be used within AppProvider');
   return context;
 };
 
-interface Props {
-  children: ReactNode;
-  title: string;
-}
+const pageTitles: Record<string, string> = {
+  '/': '新增記錄',
+  '/records': '我的記錄',
+  '/trends': '趨勢圖表',
+};
 
-export const AppLayout = ({ children, title }: Props) => {
+export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [phone, setPhone] = useState(() => localStorage.getItem('userPhone') || '');
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('userPhone'));
   const [records, setRecords] = useState<BloodPressureRecord[]>([]);
@@ -47,6 +48,7 @@ export const AppLayout = ({ children, title }: Props) => {
   const [editingRecord, setEditingRecord] = useState<BloodPressureRecord | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const loadRecords = async () => {
     const userPhone = localStorage.getItem('userPhone');
@@ -155,6 +157,8 @@ export const AppLayout = ({ children, title }: Props) => {
     );
   }
 
+  const currentTitle = pageTitles[location.pathname] || '血壓記錄';
+
   return (
     <AppContext.Provider value={{
       phone,
@@ -170,7 +174,7 @@ export const AppLayout = ({ children, title }: Props) => {
       <div className="min-h-screen bg-gradient-to-b from-rose-50 to-white pb-16">
         <header className="border-b bg-white/80 backdrop-blur sticky top-0 z-10">
           <div className="container mx-auto px-4 py-3 flex items-center justify-between max-w-3xl">
-            <h1 className="font-semibold text-rose-900">{title}</h1>
+            <h1 className="font-semibold text-rose-900">{currentTitle}</h1>
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground hidden sm:inline">{phone}</span>
               <Button variant="outline" size="sm" onClick={handleLogout} className="gap-1">
@@ -190,3 +194,6 @@ export const AppLayout = ({ children, title }: Props) => {
     </AppContext.Provider>
   );
 };
+
+// For backwards compatibility
+export const useAppContext = useApp;

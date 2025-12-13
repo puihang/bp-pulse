@@ -1,8 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AppLayout } from '@/components/AppLayout';
 import { TrendingUp } from 'lucide-react';
 
-const TrendsContent = () => {
+const Trends = () => {
   return (
     <Card>
       <CardHeader>
@@ -15,14 +14,6 @@ const TrendsContent = () => {
         </div>
       </CardContent>
     </Card>
-  );
-};
-
-const Trends = () => {
-  return (
-    <AppLayout title="趨勢圖表">
-      <TrendsContent />
-    </AppLayout>
   );
 };
 
