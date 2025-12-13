@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AppLayout, useApp } from '@/components/AppLayout';
+import { useApp } from '@/components/AppProvider';
 import { RecordsTable } from '@/components/RecordsTable';
 import { RefreshCw } from 'lucide-react';
 import {
@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { BloodPressureRecord } from '@/lib/api';
 
-const RecordsContent = () => {
+const Records = () => {
   const { records, isLoading, loadRecords, setEditingRecord, handleDelete } = useApp();
   const [deletingRecord, setDeletingRecord] = useState<BloodPressureRecord | null>(null);
   const navigate = useNavigate();
@@ -70,14 +70,6 @@ const RecordsContent = () => {
         </AlertDialogContent>
       </AlertDialog>
     </>
-  );
-};
-
-const Records = () => {
-  return (
-    <AppLayout title="我的記錄">
-      <RecordsContent />
-    </AppLayout>
   );
 };
 

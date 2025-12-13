@@ -1,7 +1,7 @@
-import { AppLayout, useApp } from '@/components/AppLayout';
+import { useApp } from '@/components/AppProvider';
 import { BloodPressureForm } from '@/components/BloodPressureForm';
 
-const IndexContent = () => {
+const Index = () => {
   const { phone, editingRecord, setEditingRecord, handleAdd, handleUpdate } = useApp();
 
   return editingRecord ? (
@@ -14,14 +14,6 @@ const IndexContent = () => {
     />
   ) : (
     <BloodPressureForm userPhone={phone} onSubmit={handleAdd} />
-  );
-};
-
-const Index = () => {
-  return (
-    <AppLayout title="新增記錄">
-      <IndexContent />
-    </AppLayout>
   );
 };
 
