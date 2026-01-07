@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>血壓記錄</title>
+  <meta name="description" content="血壓脈搏記錄應用">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    .wheel-container { height: 150px; overflow: hidden; position: relative; }
+    .wheel-list { 
+      overflow-y: scroll; 
+      scroll-snap-type: y mandatory; 
+      height: 100%; 
+      -webkit-overflow-scrolling: touch;
+    }
+    .wheel-list::-webkit-scrollbar { display: none; }
+    .wheel-item { 
+      height: 50px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      scroll-snap-align: center;
+      font-size: 24px;
+      color: #999;
+      transition: all 0.2s;
+    }
+    .wheel-item.selected { color: #000; font-weight: bold; font-size: 28px; }
+    .wheel-mask {
+      position: absolute;
+      left: 0; right: 0;
+      pointer-events: none;
+    }
+    .wheel-mask-top { top: 0; height: 50px; background: linear-gradient(to bottom, white, transparent); }
+    .wheel-mask-bottom { bottom: 0; height: 50px; background: linear-gradient(to top, white, transparent); }
+    .wheel-indicator {
+      position: absolute;
+      left: 10%; right: 10%;
+      top: 50px; height: 50px;
+      border-top: 2px solid #e5e5e5;
+      border-bottom: 2px solid #e5e5e5;
+      pointer-events: none;
+    }
+    .nav-item { flex: 1; text-align: center; padding: 12px; cursor: pointer; }
+    .nav-item.active { color: #3b82f6; border-top: 2px solid #3b82f6; }
+    .record-row { display: flex; padding: 12px; border-bottom: 1px solid #eee; }
+    .record-row:nth-child(even) { background: #f9f9f9; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div id="app"></div>
+
+  <script>
+    // State
+    let currentPage = 'add';
+    let isLoggedIn = false;
+    let userPhone = '';
+    let records = [];
+    let editingRecord = null;
+
+    // Values for pickers
+    let systolic = 120;
+    let diastolic = 80;
+    let pulse = 70;
+    let selectedDate = new Date();
+    let selectedHour = new Date().getHours();
+    let selectedMinute = new Date().getMinutes();
+
+    // Google Sheets API URL (update this with your actual URL)
+    const GOOGLE_SCRIPT_URL = '';
+
+    function formatDate(date) {
+      return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+    }
+
+    function formatTime(h, m) {
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+
+    function render() {
+      const app = document.getElementById('app');
+      
+      if (!isLoggedIn) {
+        app.innerHTML = renderLogin();
+      } else {
+        app.innerHTML = renderMainApp();
+      }
+      
+      attachEventListeners();
+    }
+
+    function renderLogin() {
+      return `
+        <div class="min-h-screen flex items-center justify-center p-4">
+          <div class="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
+            <h1 class="text-2xl font-bold text-center mb-6">血壓記錄</h1>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium mb-2">電話號碼</label>
+                <input type="tel" id="phoneInput" placeholder="請輸入電話號碼" 
+                  class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+              <button id="loginBtn" class="w-full bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600 transition">
+                登入
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderMainApp() {
+      let pageContent = '';
+      let pageTitle = '';
+      
+      if (currentPage === 'add') {
+        pageTitle = editingRecord ? '編輯記錄' : '新增記錄';
+        pageContent = renderAddPage();
+      } else if (currentPage === 'records') {
+        pageTitle = '我的記錄';
+        pageContent = renderRecordsPage();
+      } else {
+        pageTitle = '趨勢圖表';
+        pageContent = renderTrendsPage();
+      }
+
+      return `
+        <div class="min-h-screen flex flex-col pb-16">
+          <header class="bg-white shadow-sm p-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold">${pageTitle}</h1>
+            <button id="logoutBtn" class="text-gray-500 hover:text-gray-700">登出</button>
+          </header>
+          <main class="flex-1 p-4">
+            ${pageContent}
+          </main>
+          <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex">
+            <div class="nav-item ${currentPage === 'add' ? 'active' : ''}" data-page="add">新增</div>
+            <div class="nav-item ${currentPage === 'records' ? 'active' : ''}" data-page="records">記錄</div>
+            <div class="nav-item ${currentPage === 'trends' ? 'active' : ''}" data-page="trends">圖表</div>
+          </nav>
+        </div>
+      `;
+    }
+
+    function renderAddPage() {
+      return `
+        <div class="bg-white rounded-2xl shadow p-4 space-y-6">
+          <div>
+            <label class="block text-sm font-medium mb-2">日期時間</label>
+            <div class="flex gap-2">
+              <input type="date" id="dateInput" value="${selectedDate.toISOString().split('T')[0]}" 
+                class="flex-1 px-3 py-2 border rounded-lg">
+              <select id="hourInput" class="px-3 py-2 border rounded-lg">
+                ${Array.from({length: 24}, (_, i) => `<option value="${i}" ${i === selectedHour ? 'selected' : ''}>${String(i).padStart(2, '0')}</option>`).join('')}
+              </select>
+              <span class="py-2">:</span>
+              <select id="minuteInput" class="px-3 py-2 border rounded-lg">
+                ${Array.from({length: 60}, (_, i) => `<option value="${i}" ${i === selectedMinute ? 'selected' : ''}>${String(i).padStart(2, '0')}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4">
+            <div class="text-center">
+              <label class="block text-sm font-medium mb-2">收縮壓</label>
+              ${renderWheelPicker('systolic', systolic, 60, 200)}
+            </div>
+            <div class="text-center">
+              <label class="block text-sm font-medium mb-2">舒張壓</label>
+              ${renderWheelPicker('diastolic', diastolic, 40, 140)}
+            </div>
+            <div class="text-center">
+              <label class="block text-sm font-medium mb-2">脈搏</label>
+              ${renderWheelPicker('pulse', pulse, 40, 160)}
+            </div>
+          </div>
+
+          <button id="saveBtn" class="w-full bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600 transition">
+            ${editingRecord ? '更新記錄' : '保存記錄'}
+          </button>
+          ${editingRecord ? `<button id="cancelEditBtn" class="w-full border border-gray-300 py-3 rounded-lg font-medium hover:bg-gray-50 transition">取消</button>` : ''}
+        </div>
+      `;
+    }
+
+    function renderWheelPicker(id, value, min, max) {
+      const items = [];
+      for (let i = min; i <= max; i++) {
+        items.push(`<div class="wheel-item ${i === value ? 'selected' : ''}" data-value="${i}">${i}</div>`);
+      }
+      return `
+        <div class="wheel-container border rounded-lg relative">
+          <div class="wheel-list" id="${id}Wheel" data-id="${id}" data-min="${min}" data-max="${max}">
+            <div class="wheel-item" style="visibility:hidden">&nbsp;</div>
+            ${items.join('')}
+            <div class="wheel-item" style="visibility:hidden">&nbsp;</div>
+          </div>
+          <div class="wheel-mask wheel-mask-top"></div>
+          <div class="wheel-mask wheel-mask-bottom"></div>
+          <div class="wheel-indicator"></div>
+        </div>
+      `;
+    }
+
+    function renderRecordsPage() {
+      if (records.length === 0) {
+        return `<div class="text-center text-gray-500 py-8">暫無記錄</div>`;
+      }
+
+      const sortedRecords = [...records].sort((a, b) => {
+        const dateA = new Date(a.date + ' ' + a.time);
+        const dateB = new Date(b.date + ' ' + b.time);
+        return dateB - dateA;
+      });
+
+      return `
+        <div class="bg-white rounded-2xl shadow overflow-hidden">
+          <div class="grid grid-cols-6 gap-2 p-3 bg-gray-100 font-medium text-sm text-center">
+            <div>日期</div>
+            <div>時間</div>
+            <div>收縮壓</div>
+            <div>舒張壓</div>
+            <div>脈搏</div>
+            <div>操作</div>
+          </div>
+          ${sortedRecords.map(r => `
+            <div class="record-row grid grid-cols-6 gap-2 text-sm text-center items-center">
+              <div>${r.date}</div>
+              <div>${r.time}</div>
+              <div>${r.systolic}</div>
+              <div>${r.diastolic}</div>
+              <div>${r.pulse}</div>
+              <div>
+                <button class="edit-btn text-blue-500 mr-2" data-id="${r.id}">編輯</button>
+                <button class="delete-btn text-red-500" data-id="${r.id}">刪除</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderTrendsPage() {
+      if (records.length === 0) {
+        return `<div class="text-center text-gray-500 py-8">暫無數據，請先添加記錄</div>`;
+      }
+
+      // Simple text-based trend display
+      const sortedRecords = [...records].sort((a, b) => {
+        const dateA = new Date(a.date + ' ' + a.time);
+        const dateB = new Date(b.date + ' ' + b.time);
+        return dateA - dateB;
+      }).slice(-10);
+
+      const avgSystolic = Math.round(sortedRecords.reduce((s, r) => s + r.systolic, 0) / sortedRecords.length);
+      const avgDiastolic = Math.round(sortedRecords.reduce((s, r) => s + r.diastolic, 0) / sortedRecords.length);
+      const avgPulse = Math.round(sortedRecords.reduce((s, r) => s + r.pulse, 0) / sortedRecords.length);
+
+      return `
+        <div class="space-y-4">
+          <div class="bg-white rounded-2xl shadow p-4">
+            <h3 class="font-medium mb-4">平均值（最近${sortedRecords.length}筆）</h3>
+            <div class="grid grid-cols-3 gap-4 text-center">
+              <div class="p-4 bg-red-50 rounded-lg">
+                <div class="text-2xl font-bold text-red-600">${avgSystolic}</div>
+                <div class="text-sm text-gray-600">收縮壓</div>
+              </div>
+              <div class="p-4 bg-blue-50 rounded-lg">
+                <div class="text-2xl font-bold text-blue-600">${avgDiastolic}</div>
+                <div class="text-sm text-gray-600">舒張壓</div>
+              </div>
+              <div class="p-4 bg-green-50 rounded-lg">
+                <div class="text-2xl font-bold text-green-600">${avgPulse}</div>
+                <div class="text-sm text-gray-600">脈搏</div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl shadow p-4">
+            <h3 class="font-medium mb-4">最近記錄趨勢</h3>
+            <div class="space-y-2">
+              ${sortedRecords.map(r => `
+                <div class="flex items-center gap-2 text-sm">
+                  <span class="w-20 text-gray-500">${r.date.split('/').slice(1).join('/')}</span>
+                  <div class="flex-1 flex gap-1 items-center">
+                    <div class="h-4 bg-red-400 rounded" style="width: ${(r.systolic / 200) * 100}%"></div>
+                    <span class="text-xs">${r.systolic}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function attachEventListeners() {
+      // Login
+      const loginBtn = document.getElementById('loginBtn');
+      if (loginBtn) {
+        loginBtn.addEventListener('click', () => {
+          const phone = document.getElementById('phoneInput').value.trim();
+          if (phone) {
+            userPhone = phone;
+            isLoggedIn = true;
+            loadRecords();
+          }
+        });
+      }
+
+      // Logout
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+          isLoggedIn = false;
+          userPhone = '';
+          records = [];
+          render();
+        });
+      }
+
+      // Navigation
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+          currentPage = item.dataset.page;
+          editingRecord = null;
+          render();
+        });
+      });
+
+      // Date/Time inputs
+      const dateInput = document.getElementById('dateInput');
+      if (dateInput) {
+        dateInput.addEventListener('change', (e) => {
+          selectedDate = new Date(e.target.value);
+        });
+      }
+
+      const hourInput = document.getElementById('hourInput');
+      if (hourInput) {
+        hourInput.addEventListener('change', (e) => {
+          selectedHour = parseInt(e.target.value);
+        });
+      }
+
+      const minuteInput = document.getElementById('minuteInput');
+      if (minuteInput) {
+        minuteInput.addEventListener('change', (e) => {
+          selectedMinute = parseInt(e.target.value);
+        });
+      }
+
+      // Wheel pickers
+      document.querySelectorAll('.wheel-list').forEach(wheel => {
+        initWheelPicker(wheel);
+      });
+
+      // Save button
+      const saveBtn = document.getElementById('saveBtn');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', saveRecord);
+      }
+
+      // Cancel edit
+      const cancelEditBtn = document.getElementById('cancelEditBtn');
+      if (cancelEditBtn) {
+        cancelEditBtn.addEventListener('click', () => {
+          editingRecord = null;
+          systolic = 120;
+          diastolic = 80;
+          pulse = 70;
+          render();
+        });
+      }
+
+      // Edit/Delete buttons
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const record = records.find(r => r.id === btn.dataset.id);
+          if (record) {
+            editingRecord = record;
+            systolic = record.systolic;
+            diastolic = record.diastolic;
+            pulse = record.pulse;
+            const [y, m, d] = record.date.split('/');
+            selectedDate = new Date(y, m - 1, d);
+            const [h, min] = record.time.split(':');
+            selectedHour = parseInt(h);
+            selectedMinute = parseInt(min);
+            currentPage = 'add';
+            render();
+          }
+        });
+      });
+
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (confirm('確定要刪除此記錄嗎？')) {
+            deleteRecord(btn.dataset.id);
+          }
+        });
+      });
+    }
+
+    function initWheelPicker(wheel) {
+      const id = wheel.dataset.id;
+      let value;
+      if (id === 'systolic') value = systolic;
+      else if (id === 'diastolic') value = diastolic;
+      else value = pulse;
+
+      const min = parseInt(wheel.dataset.min);
+      const itemHeight = 50;
+      const scrollPos = (value - min + 1) * itemHeight - itemHeight;
+      wheel.scrollTop = scrollPos;
+
+      let scrollTimeout;
+      wheel.addEventListener('scroll', () => {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+          const scrollTop = wheel.scrollTop;
+          const index = Math.round(scrollTop / itemHeight);
+          const newValue = min + index;
+          
+          if (id === 'systolic') systolic = newValue;
+          else if (id === 'diastolic') diastolic = newValue;
+          else pulse = newValue;
+
+          // Update visual selection
+          wheel.querySelectorAll('.wheel-item').forEach((item, i) => {
+            if (i === 0 || i === wheel.children.length - 1) return;
+            item.classList.toggle('selected', parseInt(item.dataset.value) === newValue);
+          });
+        }, 100);
+      });
+    }
+
+    async function loadRecords() {
+      // For now, use localStorage as fallback
+      const stored = localStorage.getItem(`bp_records_${userPhone}`);
+      if (stored) {
+        records = JSON.parse(stored);
+      }
+      render();
+    }
+
+    async function saveRecord() {
+      const record = {
+        id: editingRecord ? editingRecord.id : Date.now().toString(),
+        phone: userPhone,
+        date: formatDate(selectedDate),
+        time: formatTime(selectedHour, selectedMinute),
+        systolic,
+        diastolic,
+        pulse
+      };
+
+      if (editingRecord) {
+        const index = records.findIndex(r => r.id === editingRecord.id);
+        if (index !== -1) {
+          records[index] = record;
+        }
+        editingRecord = null;
+      } else {
+        records.push(record);
+      }
+
+      localStorage.setItem(`bp_records_${userPhone}`, JSON.stringify(records));
+      
+      // Reset values
+      systolic = 120;
+      diastolic = 80;
+      pulse = 70;
+      selectedDate = new Date();
+      selectedHour = new Date().getHours();
+      selectedMinute = new Date().getMinutes();
+
+      alert('記錄已保存！');
+      render();
+    }
+
+    async function deleteRecord(id) {
+      records = records.filter(r => r.id !== id);
+      localStorage.setItem(`bp_records_${userPhone}`, JSON.stringify(records));
+      render();
+    }
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>
