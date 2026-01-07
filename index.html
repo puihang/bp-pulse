@@ -21,6 +21,21 @@
 
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // GitHub Pages (serving raw source) would 404 on /src/main.tsx.
+      // Redirect to the standalone docs/ build to avoid blank page.
+      const isGitHubPages = window.location.hostname.endsWith("github.io");
+      const alreadyInDocs = window.location.pathname.includes("/docs/");
+
+      if (isGitHubPages && !alreadyInDocs) {
+        const target = new URL("./docs/", window.location.href);
+        window.location.replace(target.toString());
+      } else {
+        const s = document.createElement("script");
+        s.type = "module";
+        s.src = "/src/main.tsx";
+        document.body.appendChild(s);
+      }
+    </script>
   </body>
 </html>
